@@ -1,11 +1,13 @@
 {
   "name": "bbbot-porject-a",
   "version": "1.0.0",
+  "main": "./dist/main.js",
   "description": "QQ群发消息",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "start": "yarn run build && electron ./dist/main.js"
+    "start": "yarn run build && electron ./dist/main.js",
+    "release": "yarn run build && electron-packager ./ bbbotPorjectA --platform=win32 --arch=x64 --icon=./assets/avatar.png --out=./release --overwrite"
   },
   "repository": "https://github.com/electron/electron-quick-start-typescript",
   "keywords": [
@@ -18,11 +20,12 @@
   "author": "Riceneeder",
   "license": "CC0-1.0",
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^4.33.0",
-    "@typescript-eslint/parser": "^4.33.0",
     "electron": "^18.2.3",
-    "eslint": "^7.32.0",
+    "electron-packager": "^15.5.1",
     "typescript": "^4.7.2"
   },
-  "dependencies": {}
+  "dependencies": {
+    "mdui": "^1.0.2",
+    "oicq": "^2.3.1"
+  }
 }

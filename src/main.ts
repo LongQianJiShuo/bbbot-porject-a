@@ -1,44 +1,155 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain, webContents } from "electron";
+import libOicq from "./liboicq";
 import * as path from "path";
+import deleteDir from "./init";
 
-function createWindow() {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    height: 600,
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-    },
-    width: 800,
-  });
-
-  // and load the index.html of the app.
-  mainWindow.loadFile(path.join(__dirname, "../index.html"));
-
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+try {
+  deleteDir(path.join(__dirname, "data"));
+} catch (error) {
+  
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.on("ready", () => {
-  createWindow();
-
-  app.on("activate", function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+var oicq: libOicq;
+var StepOneWindow: BrowserWindow;
+var MainWindow: BrowserWindow;
+//绘制主窗口
+function createMainWindow() {
+  // Create the browser window.
+  const mainWindow = new BrowserWindow({
+    webPreferences: {
+      preload: path.join(__dirname, "ipcPerload.js"),
+    },
+    height: 600,
+    width: 800,
+    resizable: false,
+    frame: false,
+    autoHideMenuBar: true,
   });
+  mainWindow.loadFile(path.join(__dirname, "../index.html"));
+  MainWindow = mainWindow;
+
+  // Open the DevTools.
+  // mainWindow.webContents.openDevTools();
+}
+//绘制第一步窗口
+function createLoginStepOneWindow() {
+  const loginStepOneWindow = new BrowserWindow({
+    webPreferences: {
+      preload: path.join(__dirname, "ipcPerload.js"),
+    },
+    height: 230,
+    width: 380,
+    center: true,
+    resizable: false,
+    frame: false,
+    autoHideMenuBar: true,
+
+  });
+  loginStepOneWindow.loadFile(path.join(__dirname, "../login-step-one.html"));
+  StepOneWindow = loginStepOneWindow;
+}
+//绘制二维码窗口
+function createLoginStepTwoWindow() {
+  const loginStepTwoWindow = new BrowserWindow({
+    webPreferences: {
+      preload: path.join(__dirname, "ipcPerload.js"),
+    },
+    height: 300,
+    width: 200,
+    center: true,
+    resizable: false,
+    frame: false,
+    autoHideMenuBar: true,
+  });
+  loginStepTwoWindow.loadFile(path.join(__dirname, "../login-step-two.html"));
+  return loginStepTwoWindow;
+}
+
+app.on("ready", () => {
+  createLoginStepOneWindow();
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
+    try {
+      deleteDir(path.join(__dirname, "data"));
+    } catch (error) {
+      
+    }
     app.quit();
   }
+
+
 });
 
-// In this file you can include the rest of your app"s specific main process
-// code. You can also put them in separate files and require them here.
+//收到登录信息
+ipcMain.on('accountInfo', (event, data) => {
+  //实例化一个oicq
+  oicq = new libOicq(data[0].account.QQnumber, data[0].account.agreement);
+  oicq.login();
+  //获取登录二维码
+  let qrcodeWindow: BrowserWindow;
+  StepOneWindow.close(); //信息获取窗口关闭
+  let callbackOfQrcode:Function = ()=> {
+    qrcodeWindow = createLoginStepTwoWindow(); //创建二维码窗口
+    let getQrcodeResult = setInterval(async () => { //定时获取二维码结果
+      let result = await oicq.queryQrcodeResult();
+      if (result.retcode == 0) {  //已扫码
+        oicq.login(); //登录
+        oicq.log().info("已扫码");
+        clearInterval(getQrcodeResult); //清除定时器
+        let loginResult = setInterval(() => { //定时获取登录结果
+          if (oicq.isOnline) { //如果登录成功
+            oicq.log().info("登录成功");
+            clearInterval(loginResult); //清除定时器
+            qrcodeWindow.close(); //关闭二维码窗口
+            createMainWindow(); //创建主窗口
+          }
+        },1000);
+      }
+    }, 1500);
+  }
+  try {
+    oicq.on("system.login.qrcode",callbackOfQrcode);
+  } catch (error) {
+    
+  }
+})
+
+//发送二维码路径
+ipcMain.on('getQrcode', (event) => {
+  console.log('getQrcode');
+  var path = `./dist/data/${oicq.qq}/qrcode.png`;
+  event.sender.send('qrcode.path', path);
+})
+//发送信息列表
+ipcMain.on('getFriendsAndGroupList',(et)=>{
+  let list = oicq.getFriendsAndGroupList();
+  et.sender.send('FriendsAndGroupList',list);
+})
+//发送消息
+ipcMain.on('sendMessage',(event,data)=>{
+  let friendList:number[] = data[0].friendList;
+  let groupList:number[] = data[0].groupList;
+  let message = data[0].message;
+  let delay = data[0].delay;
+  let _delay1 = delay;
+  let _delay2 = delay;
+  friendList.forEach(friend=>{
+    setTimeout(()=>{
+      oicq.client.sendPrivateMsg(friend,message);
+    },_delay1)
+    _delay1 += delay;
+  });
+  groupList.forEach(async group=>{
+    setTimeout(()=>{
+      oicq.client.sendGroupMsg(group,message);
+    },_delay2)
+    _delay2 += delay;
+  });
+})
+//收到窗口最小化信号
+ipcMain.on('window-minimize',(event)=>{
+  MainWindow.minimize();
+});
