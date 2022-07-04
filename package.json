@@ -7,9 +7,9 @@
     "build": "tsc",
     "watch": "tsc -w",
     "start": "yarn run build && electron ./dist/main.js",
-    "release": "yarn run build && electron-packager ./ bbbotPorjectA --platform=win32 --arch=x64 --icon=./assets/avatar.png --out=./release --overwrite"
+    "release": "yarn run build && electron-packager ./ bbbotPorjectA --platform=win32 --arch=x64 --icon=./assets/icon.ico --out=./release --overwrite"
   },
-  "repository": "https://github.com/electron/electron-quick-start-typescript",
+  "repository": "https://github.com/Riceneeder/bbbot-porject-a",
   "keywords": [
     "Electron",
     "群发消息",
