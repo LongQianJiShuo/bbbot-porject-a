@@ -13,7 +13,7 @@
 
 克隆仓库
 ```
-https://github.com/Riceneeder/bbbot-porject-a
+git clone https://github.com/Riceneeder/bbbot-porject-a.git
 ```
 安装依赖
 ```
