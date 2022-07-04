@@ -1,8 +1,15 @@
 # BBbot Project A
 
+![](./icon.png)
+
 这是一款简单的QQ群发工具，现可群发文本消息
 
+## 截图
+
+![](./shotcut1.png)
+![](./shotcut2.png)
 ## 开发
+
 
 克隆仓库
 ```
