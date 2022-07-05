@@ -24,8 +24,12 @@ function createMainWindow() {
     resizable: false,
     frame: false,
     autoHideMenuBar: true,
+    show: false,
   });
   mainWindow.loadFile(path.join(__dirname, "../index.html"));
+  mainWindow.on("ready-to-show", () => {
+    mainWindow.show();
+  });
   MainWindow = mainWindow;
 
   // Open the DevTools.
@@ -43,9 +47,12 @@ function createLoginStepOneWindow() {
     resizable: false,
     frame: false,
     autoHideMenuBar: true,
-
+    show: false,
   });
   loginStepOneWindow.loadFile(path.join(__dirname, "../login-step-one.html"));
+  loginStepOneWindow.on("ready-to-show", () => {
+    loginStepOneWindow.show();
+  });
   StepOneWindow = loginStepOneWindow;
 }
 //绘制二维码窗口
@@ -60,8 +67,12 @@ function createLoginStepTwoWindow() {
     resizable: false,
     frame: false,
     autoHideMenuBar: true,
+    show: false,
   });
   loginStepTwoWindow.loadFile(path.join(__dirname, "../login-step-two.html"));
+  loginStepTwoWindow.on("ready-to-show", () => {
+    loginStepTwoWindow.show();
+  });
   return loginStepTwoWindow;
 }
 
