@@ -1,6 +1,6 @@
 {
   "name": "bbbot-porject-a",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "./dist/main.js",
   "description": "QQ群发消息",
   "scripts": {
