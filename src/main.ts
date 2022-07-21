@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, webContents } from "electron";
 import libOicq from "./liboicq";
 import * as path from "path";
 import deleteDir from "./init";
+import Queue from "./queue";
 
 try {
   deleteDir(path.join(__dirname, "data"));
@@ -9,6 +10,7 @@ try {
   
 }
 
+const queue = new Queue();
 var oicq: libOicq;
 var StepOneWindow: BrowserWindow;
 var MainWindow: BrowserWindow;
@@ -145,21 +147,25 @@ ipcMain.on('sendMessage',(event,data)=>{
   let groupList:number[] = data[0].groupList;
   let message = data[0].message;
   let delay = data[0].delay;
-  let _delay1 = delay;
-  let _delay2 = delay;
-  friendList.forEach(friend=>{
-    setTimeout(()=>{
-      oicq.client.sendPrivateMsg(friend,message);
-    },_delay1)
-    _delay1 += delay;
-  });
-  groupList.forEach(async group=>{
-    setTimeout(()=>{
-      oicq.client.sendGroupMsg(group,message);
-    },_delay2)
-    _delay2 += delay;
-  });
-})
+  queue.pushFriendsList(friendList);
+  queue.pushGroupsList(groupList);
+  var sendFriendsMessage = setInterval(()=>{
+    if(queue.isFriendsListEmpty()){
+      clearInterval(sendFriendsMessage);
+      return;
+    }
+    let friend = queue.popFriends();
+    oicq.client.sendPrivateMsg(friend,message);
+  },delay);
+  var sendGroupsMessage = setInterval(()=>{
+    if(queue.isGroupsListEmpty()){
+      clearInterval(sendGroupsMessage);
+      return;
+    }
+    let group = queue.popGroups();
+    oicq.client.sendGroupMsg(group,message);
+  },delay);
+});
 //收到窗口最小化信号
 ipcMain.on('window-minimize',(event)=>{
   MainWindow.minimize();
